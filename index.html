@@ -1,0 +1,1561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Code Roast Machine 🔥</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Bebas+Neue&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --bg2: #111111;
+    --bg3: #1a1a1a;
+    --border: #2a2a2a;
+    --border2: #3a3a3a;
+    --red: #ff3b30;
+    --red2: #ff6b61;
+    --amber: #ff9500;
+    --green: #30d158;
+    --text: #f0ede8;
+    --text2: #888;
+    --text3: #555;
+    --mono: 'Space Mono', monospace;
+    --display: 'Bebas Neue', sans-serif;
+    --body: 'DM Sans', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--body);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── NOISE OVERLAY ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.4;
+  }
+
+  /* ── ANIMATED BG LINES ── */
+  .bg-lines {
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .bg-lines::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: -100px;
+    width: 1px;
+    height: 120vh;
+    background: linear-gradient(to bottom, transparent, var(--red) 40%, transparent);
+    opacity: 0.06;
+    animation: scanline 8s linear infinite;
+  }
+  @keyframes scanline {
+    0% { transform: translateX(-400px); opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { transform: translateX(400px); opacity: 0; }
+  }
+
+  /* ── LAYOUT ── */
+  .page {
+    position: relative;
+    z-index: 1;
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 60px 24px 100px;
+  }
+
+  /* ── HEADER ── */
+  .hero {
+    text-align: center;
+    margin-bottom: 56px;
+  }
+  .hero-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.25em;
+    color: var(--red);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    opacity: 0;
+    animation: fadein 0.6s 0.1s forwards;
+  }
+  .hero h1 {
+    font-family: var(--display);
+    font-size: clamp(64px, 12vw, 120px);
+    letter-spacing: 0.04em;
+    line-height: 0.9;
+    color: var(--text);
+    opacity: 0;
+    animation: fadein 0.6s 0.2s forwards;
+  }
+  .hero h1 .fire {
+    color: var(--red);
+    display: inline-block;
+    animation: flicker 2s ease-in-out infinite;
+  }
+  @keyframes flicker {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.85; }
+    75% { opacity: 0.95; }
+  }
+  .hero-sub {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text2);
+    margin-top: 20px;
+    opacity: 0;
+    animation: fadein 0.6s 0.35s forwards;
+  }
+  @keyframes fadein {
+    to { opacity: 1; }
+  }
+
+  /* ── API KEY SECTION ── */
+  .api-section {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 20px;
+    opacity: 0;
+    animation: fadein 0.6s 0.5s forwards;
+  }
+  .api-section-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    color: var(--text3);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .api-key-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+  .api-key-row input {
+    flex: 1;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s;
+    min-width: 0;
+  }
+  .api-key-row input:focus { border-color: var(--red); }
+  .api-hint {
+    font-size: 12px;
+    color: var(--text3);
+    margin-top: 8px;
+    font-family: var(--mono);
+  }
+  .api-hint a { color: var(--red2); text-decoration: none; }
+  .api-hint a:hover { text-decoration: underline; }
+
+  /* ── INPUT SECTION ── */
+  .input-section {
+    opacity: 0;
+    animation: fadein 0.6s 0.6s forwards;
+    margin-bottom: 32px;
+  }
+  .url-row {
+    display: flex;
+    gap: 12px;
+    align-items: stretch;
+  }
+  .url-input-wrap {
+    flex: 1;
+    position: relative;
+  }
+  .url-icon {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 16px;
+    pointer-events: none;
+  }
+  .url-input-wrap input {
+    width: 100%;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 16px 16px 44px;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .url-input-wrap input:focus {
+    border-color: var(--red);
+    box-shadow: 0 0 0 3px rgba(255,59,48,0.12);
+  }
+  .url-input-wrap input::placeholder { color: var(--text3); }
+
+  .roast-btn {
+    background: var(--red);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 16px 28px;
+    font-family: var(--display);
+    font-size: 22px;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
+    box-shadow: 0 4px 24px rgba(255,59,48,0.3);
+  }
+  .roast-btn:hover {
+    background: #ff1f12;
+    box-shadow: 0 6px 32px rgba(255,59,48,0.45);
+    transform: translateY(-1px);
+  }
+  .roast-btn:active { transform: scale(0.97) translateY(0); }
+  .roast-btn:disabled {
+    background: var(--bg3);
+    color: var(--text3);
+    box-shadow: none;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  /* ── ERROR ── */
+  .error-bar {
+    background: rgba(255,59,48,0.1);
+    border: 1px solid rgba(255,59,48,0.3);
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--red2);
+    margin-top: 12px;
+    display: none;
+  }
+
+  /* ── PROGRESS ── */
+  #progressSection {
+    display: none;
+    margin-bottom: 32px;
+  }
+  .progress-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px 28px 24px;
+  }
+  .progress-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+  .skull-spin {
+    font-size: 28px;
+    animation: spin 1.5s linear infinite;
+  }
+  @keyframes spin {
+    0% { transform: rotate(0deg) scale(1); }
+    50% { transform: rotate(180deg) scale(1.1); }
+    100% { transform: rotate(360deg) scale(1); }
+  }
+  .progress-title {
+    font-family: var(--display);
+    font-size: 24px;
+    letter-spacing: 0.05em;
+  }
+  .progress-subtitle {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text2);
+  }
+
+  .progress-track {
+    background: var(--bg3);
+    border-radius: 4px;
+    height: 4px;
+    overflow: hidden;
+    margin-bottom: 12px;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--red), var(--amber));
+    border-radius: 4px;
+    transition: width 0.4s ease;
+    width: 0%;
+  }
+  .progress-stats {
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text3);
+  }
+  #progressMsg {
+    color: var(--text2);
+    font-size: 12px;
+    font-family: var(--mono);
+    margin-top: 14px;
+    min-height: 1.4em;
+  }
+
+  .log-box {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-top: 16px;
+    max-height: 160px;
+    overflow-y: auto;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text3);
+    line-height: 1.8;
+  }
+  .log-box .log-line { display: block; }
+  .log-box .log-ok { color: var(--green); }
+  .log-box .log-warn { color: var(--amber); }
+  .log-box .log-err { color: var(--red2); }
+
+  /* ── RESULTS ── */
+  #resultsSection { display: none; }
+
+  .results-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+  }
+  .results-title {
+    font-family: var(--display);
+    font-size: 48px;
+    letter-spacing: 0.04em;
+    line-height: 1;
+  }
+  .results-title span { color: var(--red); }
+
+  .download-btn {
+    background: var(--green);
+    color: #000;
+    border: none;
+    border-radius: 10px;
+    padding: 14px 24px;
+    font-family: var(--display);
+    font-size: 20px;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    transition: all 0.15s;
+    box-shadow: 0 4px 20px rgba(48,209,88,0.25);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .download-btn:hover {
+    background: #28c44e;
+    box-shadow: 0 6px 28px rgba(48,209,88,0.4);
+    transform: translateY(-1px);
+  }
+  .download-btn:active { transform: scale(0.97); }
+
+  /* score strip */
+  .score-strip {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+  .score-chip {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .score-chip-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    color: var(--text3);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .score-chip-val {
+    font-family: var(--display);
+    font-size: 32px;
+    line-height: 1;
+    color: var(--red);
+  }
+  .score-chip-val.ok { color: var(--amber); }
+  .score-chip-val.good { color: var(--green); }
+  .score-chip-sub {
+    font-size: 11px;
+    color: var(--text3);
+    font-family: var(--mono);
+    margin-top: 4px;
+  }
+
+  /* verdict */
+  .verdict-box {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--red);
+    border-radius: 10px;
+    padding: 20px 22px;
+    margin-bottom: 28px;
+    font-size: 15px;
+    line-height: 1.7;
+    color: var(--text);
+  }
+  .verdict-box strong {
+    display: block;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: var(--red);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  /* file findings */
+  .findings-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .finding-row {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .finding-row + .finding-row { margin-top: 2px; }
+  .finding-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: background 0.15s;
+    user-select: none;
+  }
+  .finding-header:hover { background: var(--bg3); }
+  .finding-filename {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text);
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .severity-badge {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    flex-shrink: 0;
+  }
+  .sev-critical { background: rgba(255,59,48,0.15); color: var(--red2); border: 1px solid rgba(255,59,48,0.3); }
+  .sev-high { background: rgba(255,149,0,0.12); color: var(--amber); border: 1px solid rgba(255,149,0,0.3); }
+  .sev-medium { background: rgba(255,214,10,0.1); color: #ffd60a; border: 1px solid rgba(255,214,10,0.2); }
+  .sev-low { background: rgba(48,209,88,0.08); color: var(--green); border: 1px solid rgba(48,209,88,0.2); }
+
+  .finding-chevron {
+    color: var(--text3);
+    font-size: 11px;
+    transition: transform 0.2s;
+    flex-shrink: 0;
+  }
+  .finding-row.open .finding-chevron { transform: rotate(90deg); }
+  .finding-body {
+    display: none;
+    padding: 0 16px 16px;
+    border-top: 1px solid var(--border);
+    margin-top: 0;
+  }
+  .finding-row.open .finding-body { display: block; }
+
+  .issue-list { margin-top: 12px; display: flex; flex-direction: column; gap: 10px; }
+  .issue-item {
+    padding: 12px 14px;
+    background: var(--bg3);
+    border-radius: 8px;
+    border-left: 2px solid var(--border2);
+  }
+  .issue-item.crit { border-left-color: var(--red); }
+  .issue-item.high { border-left-color: var(--amber); }
+  .issue-item.med { border-left-color: #ffd60a; }
+  .issue-item.low { border-left-color: var(--green); }
+
+  .issue-title {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+  .issue-detail {
+    font-size: 13px;
+    color: var(--text2);
+    line-height: 1.6;
+  }
+  .issue-line {
+    display: inline-block;
+    margin-top: 6px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text3);
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 2px 7px;
+  }
+
+  .reset-btn {
+    margin-top: 40px;
+    text-align: center;
+  }
+  .reset-btn button {
+    background: none;
+    border: 1px solid var(--border2);
+    color: var(--text2);
+    border-radius: 8px;
+    padding: 10px 24px;
+    font-family: var(--mono);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .reset-btn button:hover { border-color: var(--red); color: var(--red); }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  /* tooltip */
+  .tip {
+    font-size: 11px;
+    color: var(--text3);
+    font-family: var(--mono);
+    margin-top: 10px;
+    padding: 8px 12px;
+    background: var(--bg3);
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    line-height: 1.6;
+  }
+  .tip a { color: var(--red2); text-decoration: none; }
+  .tip a:hover { text-decoration: underline; }
+
+  /* ── MODEL SELECT ── */
+  .model-section {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 20px;
+    opacity: 0;
+    animation: fadein 0.6s 0.55s forwards;
+  }
+  .model-grid {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 12px;
+    align-items: start;
+  }
+  .model-select {
+    width: 100%;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text);
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.2s;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23555' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    padding-right: 36px;
+  }
+  .model-select:focus { border-color: var(--red); }
+  .model-select option { background: var(--bg3); color: var(--text); }
+  .model-badge {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+  }
+  .model-stat {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    border: 1px solid var(--border2);
+    color: var(--text3);
+  }
+  .model-stat.good { border-color: rgba(48,209,88,0.3); color: var(--green); }
+  .model-stat.warn { border-color: rgba(255,149,0,0.3); color: var(--amber); }
+  .model-stat.bad  { border-color: rgba(255,59,48,0.3);  color: var(--red2); }
+  .model-quality {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    color: var(--text3);
+    margin-top: 8px;
+    text-transform: uppercase;
+  }
+
+  @media (max-width: 600px) {
+    .url-row { flex-direction: column; }
+    .results-header { flex-direction: column; }
+    .download-btn { width: 100%; text-align: center; }
+    .model-badge { gap: 4px; }
+  }
+</style>
+</head>
+<body>
+<div class="bg-lines"></div>
+<div class="page">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-eyebrow">// A TOOL FOR THE BRUTAL TRUTH</div>
+    <h1>CODE<br><span class="fire">ROAST</span></h1>
+    <div class="hero-sub">paste a repo. watch it burn. download the ashes.</div>
+  </div>
+
+  <!-- API KEY -->
+  <div class="api-section">
+    <div class="api-section-label">Gemini API Key (required)</div>
+    <div class="api-key-row">
+      <input type="password" id="apiKey" placeholder="AIza..." autocomplete="off" />
+    </div>
+    <div class="api-hint">
+      Get a free key at <a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com</a> — 
+      your key stays in your browser and is never sent anywhere except directly to Google's API.
+    </div>
+  </div>
+
+  <!-- MODEL SELECT -->
+  <div class="model-section">
+    <div class="api-section-label">Model</div>
+    <select id="modelSelect" class="model-select" onchange="onModelChange()"></select>
+    <div class="model-badge" id="modelBadge"></div>
+    <div class="model-quality" id="modelQuality"></div>
+  </div>
+
+  <!-- REPO INPUT -->
+  <div class="input-section">
+    <div class="url-row">
+      <div class="url-input-wrap">
+        <span class="url-icon">⌨</span>
+        <input type="text" id="repoUrl" placeholder="https://github.com/username/repository" />
+      </div>
+      <button class="roast-btn" id="roastBtn" onclick="startRoast()">ROAST IT</button>
+    </div>
+    <div class="error-bar" id="errorBar"></div>
+    <div class="tip">
+      Works on any <strong>public</strong> GitHub repository. Uses GitHub's free API + your Gemini key.
+      Large repos (500+ files) will be sampled intelligently. The full report is saved in the ZIP.
+    </div>
+  </div>
+
+  <!-- PROGRESS -->
+  <div id="progressSection">
+    <div class="progress-card">
+      <div class="progress-header">
+        <span class="skull-spin">💀</span>
+        <div>
+          <div class="progress-title">ANALYZING</div>
+          <div class="progress-subtitle" id="progressRepo">your codebase...</div>
+        </div>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+      <div class="progress-stats">
+        <span id="progressCount">0 / 0 files</span>
+        <span id="progressPct">0%</span>
+      </div>
+      <div id="progressMsg">Preparing to roast...</div>
+      <div class="log-box" id="logBox"></div>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="resultsSection">
+    <div class="results-header">
+      <div>
+        <div class="results-title">THE <span>VERDICT</span></div>
+        <div style="font-family:var(--mono);font-size:12px;color:var(--text2);margin-top:6px;" id="repoNameDisplay"></div>
+      </div>
+      <button class="download-btn" id="downloadBtn" onclick="downloadZip()">⬇ DOWNLOAD REPORT</button>
+    </div>
+
+    <div class="score-strip" id="scoreStrip"></div>
+    <div class="verdict-box" id="verdictBox"></div>
+    <div class="findings-grid" id="findingsGrid"></div>
+    <div class="reset-btn"><button onclick="resetAll()">🔄 Roast another repo</button></div>
+  </div>
+
+</div>
+
+<script>
+// ── STATE ──
+let zipData = null;
+let allResults = [];
+let repoMeta = {};
+
+// ── MODEL CONFIGS ──
+// slice targets ~800 lines (60K chars) where TPM allows; Gemma 3 capped at 15K TPM
+// delay = max(60000/rpm, tpm_floor) + 5% buffer
+const MODEL_CONFIGS = {
+  'gemini-3.1-flash-lite-preview': { name:'Gemini 3.1 Flash Lite', rpm:15, tpmK:250, rpd:500, delay:5000, slice:60000, maxOut:2500, jsonMode:true, quality:'Best free-tier — ~800 lines/file · ~4 min for 50 files · 500 RPD (9 repos/day) · JSON mode ✓' },
+};
+
+
+function onModelChange() {
+  const id = document.getElementById('modelSelect').value;
+  const m = MODEL_CONFIGS[id];
+  if (!m) return;
+  const approxLines = Math.round(m.slice / 75);
+  const est50mins = ((50 * m.delay) / 60000).toFixed(1);
+  const est50Cls = parseFloat(est50mins) <= 10 ? 'good' : parseFloat(est50mins) <= 30 ? 'warn' : 'bad';
+  // Max files/day = RPD minus 2 overhead calls (context map + verdict)
+  const maxFilesDay = m.rpd >= 14400 ? '14K+' : (m.rpd - 2);
+  const rpdDayCls = m.rpd >= 500 ? 'good' : m.rpd >= 50 ? 'warn' : 'bad';
+  const badge = document.getElementById('modelBadge');
+  const rpmCls  = m.rpm  >= 15 ? 'good' : 'warn';
+  const tpmCls  = m.tpmK === 999 ? 'good' : m.tpmK >= 50 ? 'good' : 'warn';
+  const lineCls = approxLines >= 700 ? 'good' : approxLines >= 400 ? 'warn' : 'bad';
+  badge.innerHTML = [
+    `<span class="model-stat ${rpmCls}">${m.rpm} RPM</span>`,
+    `<span class="model-stat ${tpmCls}">${m.tpmK === 999 ? '\u221e' : m.tpmK + 'K'} TPM</span>`,
+    `<span class="model-stat ${rpdDayCls}">${m.rpd >= 14400 ? '14.4K' : m.rpd} RPD</span>`,
+    `<span class="model-stat ${rpdDayCls}">${maxFilesDay} files/day</span>`,
+    `<span class="model-stat ${lineCls}">~${approxLines} lines/file</span>`,
+    `<span class="model-stat ${est50Cls}">~${est50mins} min/50 files</span>`,
+    m.jsonMode ? '<span class="model-stat good">JSON \u2713</span>' : '<span class="model-stat warn">prompt JSON</span>',
+  ].join('');
+  document.getElementById('modelQuality').textContent = '// ' + m.quality;
+}
+
+function initModelSelect() {
+  const sel = document.getElementById('modelSelect');
+  sel.innerHTML = '';
+  for (const [id, m] of Object.entries(MODEL_CONFIGS)) {
+    const opt = document.createElement('option');
+    opt.value = id;
+    opt.textContent = m.name;
+    if (id === 'gemma-3-27b-it') opt.selected = true;
+    sel.appendChild(opt);
+  }
+  onModelChange();
+}
+initModelSelect();
+
+// ── HELPERS ──
+function setError(msg) {
+  const el = document.getElementById('errorBar');
+  el.textContent = msg;
+  el.style.display = msg ? 'block' : 'none';
+}
+
+function log(msg, type = '') {
+  const box = document.getElementById('logBox');
+  const line = document.createElement('span');
+  line.className = 'log-line' + (type ? ' log-' + type : '');
+  line.textContent = '› ' + msg;
+  box.appendChild(line);
+  box.scrollTop = box.scrollHeight;
+}
+
+function setProgress(done, total, msg) {
+  const pct = total ? Math.round((done / total) * 100) : 0;
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressCount').textContent = done + ' / ' + total + ' files';
+  document.getElementById('progressPct').textContent = pct + '%';
+  if (msg) document.getElementById('progressMsg').textContent = msg;
+}
+
+// ── GITHUB API ──
+async function ghFetch(url) {
+  const res = await fetch(url, { headers: { Accept: 'application/vnd.github.v3+json' } });
+  if (!res.ok) {
+    if (res.status === 403) throw new Error('GitHub rate limit hit. Wait a minute and try again.');
+    if (res.status === 404) throw new Error('Repo not found. Is it public?');
+    throw new Error('GitHub API error: ' + res.status);
+  }
+  return res.json();
+}
+
+async function getRepoTree(owner, repo) {
+  // get default branch
+  const info = await ghFetch(`https://api.github.com/repos/${owner}/${repo}`);
+  repoMeta = info;
+  const branch = info.default_branch || 'main';
+  log('Default branch: ' + branch, 'ok');
+
+  // get full recursive tree
+  const tree = await ghFetch(`https://api.github.com/repos/${owner}/${repo}/git/trees/${branch}?recursive=1`);
+  if (tree.truncated) log('Tree truncated by GitHub (very large repo) — sampling top files', 'warn');
+  return tree.tree.filter(f => f.type === 'blob');
+}
+
+const CODE_EXTS = /\.(js|jsx|ts|tsx|py|java|go|rb|php|cs|cpp|c|h|rs|swift|kt|vue|svelte|html|css|scss|sass|sh|bash|yml|yaml|json|toml|env\.example|Dockerfile|makefile|sql|graphql|proto)$/i;
+const SKIP_DIRS = /^(node_modules|\.git|dist|build|\.next|__pycache__|\.venv|venv|vendor|coverage|\.cache)\//;
+const MAX_FILE_SIZE = 200000; // 200kb per file
+
+function buildFileTree(allBlobs) {
+  // Returns all blob paths excluding generated/binary dirs
+  return allBlobs
+    .map(f => f.path)
+    .filter(p => !SKIP_DIRS.test(p) && !/(\.(png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|mp4|mp3|pdf|zip|tar|gz|lock|min\.js|min\.css)|package-lock\.json|yarn\.lock|pnpm-lock\.yaml|\.DS_Store)$/i.test(p));
+}
+
+// ── CODEBASE CONTEXT (LLM file selection) ──
+async function getCodebaseContext(apiKey, owner, repo, allPaths, repoInfo) {
+  const cfg = MODEL_CONFIGS[document.getElementById('modelSelect').value] || MODEL_CONFIGS['gemma-3-27b-it'];
+  // Gemma 3 (15K TPM): 250 paths ≈ 7500 chars input, leaves room for output
+  // Mid-tier (≤250K): 500 paths. High-tier: 1000 paths
+  const maxPaths = cfg.tpmK <= 15 ? 250 : cfg.tpmK <= 50 ? 500 : 1000;
+  const treeStr = allPaths.slice(0, maxPaths).join('\n');
+
+  const prompt = `OUTPUT FORMAT: Respond with ONLY a valid JSON object. Start with { and end with }. No markdown, no explanation.
+
+You are a senior engineer commissioned to do a comprehensive code audit of "${owner}/${repo}". You must NOT miss important files.
+
+COMPLETE FILE TREE (showing ${Math.min(allPaths.length, maxPaths)} of ${allPaths.length} files):
+${treeStr}${allPaths.length > maxPaths ? `\n... and ${allPaths.length - maxPaths} more (model input limit)` : ''}
+
+REPO INFO:
+- Description: ${repoInfo.description || 'none'}
+- Language: ${repoInfo.language || 'unknown'}
+- Stars: ${repoInfo.stargazers_count || 0}
+
+Tasks:
+1. Write a 2-3 sentence technical description: what this codebase does, its architecture pattern, and primary tech stack. Be specific about key components.
+2. Select ALL files worth reviewing. Be comprehensive — err on the side of including more rather than fewer. Include:
+   - ALL entry points, main modules, core business logic files
+   - ALL auth, API handlers, database queries (security-sensitive)
+   - ALL config files and environment handling
+   - ALL complex utility modules, helpers, middleware
+   - ALL hardware/RTL modules (.v, .sv, .vhd files)
+   - ALL significant test files that reveal intended behaviour
+   Only skip: auto-generated files, build artifacts, binary assets, pure data files with no logic.
+   Return up to 100 paths, ordered by importance (most critical first).
+
+Return:
+{
+  "description": "<2-3 sentence architectural summary with specific component names>",
+  "filesToAnalyze": ["path/to/file1", "path/to/file2", ...]
+}`;
+
+  const text = await geminiCall(apiKey, prompt, 3000, '{');
+  const parsed = safeParseObject(text);
+  // Filter out placeholder paths the model may copy literally from the prompt template
+  const realPaths = Array.isArray(parsed.filesToAnalyze)
+    ? parsed.filesToAnalyze.filter(p => typeof p === 'string' && !p.startsWith('path/to/') && p.length > 0)
+    : [];
+  if (realPaths.length === 0) {
+    log('Context response (raw): ' + text.slice(0, 400), 'warn');
+  }
+  return {
+    description: parsed.description || 'No description generated.',
+    filesToAnalyze: realPaths
+  };
+}
+
+function safeParseObject(raw) {
+  const clean = raw.replace(/```json|```/g, '').trim();
+  const attempts = [
+    s => JSON.parse(s),
+    s => JSON.parse(s.slice(s.indexOf('{'), s.lastIndexOf('}') + 1)),
+    s => JSON.parse(s.replace(/,\s*([}\]])/g, '$1')),
+  ];
+  for (const fn of attempts) { try { return fn(clean); } catch (_) {} }
+  return {};
+}
+
+async function fetchFileContent(owner, repo, path) {
+  try {
+    const res = await fetch(`https://raw.githubusercontent.com/${owner}/${repo}/HEAD/${path}`);
+    if (!res.ok) return null;
+    const text = await res.text();
+    return text.length > MAX_FILE_SIZE ? text.slice(0, MAX_FILE_SIZE) : text;
+  } catch (e) {
+    return null;
+  }
+}
+
+// prefill: seed the assistant turn with '[' or '{' to force JSON output on non-JSON-mode models
+async function geminiCall(apiKey, prompt, maxTokens, prefill = null, attempt = 1) {
+  const MAX_ATTEMPTS = 4;
+  const modelId = document.getElementById('modelSelect').value;
+  const cfg = MODEL_CONFIGS[modelId] || MODEL_CONFIGS['gemma-3-27b-it'];
+
+  // Build content array — for non-JSON-mode models use prefill to seed assistant turn
+  const contents = [{ role: 'user', parts: [{ text: prompt }] }];
+  if (prefill && !cfg.jsonMode) {
+    contents.push({ role: 'model', parts: [{ text: prefill }] });
+  }
+
+  const body = {
+    contents,
+    generationConfig: { maxOutputTokens: maxTokens, temperature: 0.2 }
+  };
+  if (cfg.jsonMode) body.generationConfig.responseMimeType = 'application/json';
+
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-goog-api-key': apiKey
+    },
+    body: JSON.stringify(body)
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    const msg = (err.error && err.error.message) || '';
+
+    // Permanent errors — don't retry
+    if (res.status === 400 && msg.includes('API_KEY')) throw new Error('Invalid API key. Check and try again.');
+    if (res.status === 403) throw new Error('Invalid API key. Check and try again.');
+
+    // Quota errors with explicit wait hint
+    const retryMatch = msg.match(/retry in ([\d.]+)s/i);
+    if (retryMatch) {
+      const wait = Math.ceil(parseFloat(retryMatch[1])) + 2;
+      throw new Error(`QUOTA_WAIT:${wait}:` + msg);
+    }
+
+    // Transient overload (503 / "high demand") — exponential backoff retry
+    const isTransient = res.status === 503 || msg.toLowerCase().includes('high demand') || msg.toLowerCase().includes('temporarily');
+    if (isTransient && attempt < MAX_ATTEMPTS) {
+      const wait = 10 * attempt; // 10s, 20s, 30s
+      log(`Model overloaded — retrying in ${wait}s (attempt ${attempt}/${MAX_ATTEMPTS})...`, 'warn');
+      await new Promise(r => setTimeout(r, wait * 1000));
+      return geminiCall(apiKey, prompt, maxTokens, prefill, attempt + 1);
+    }
+
+    throw new Error(msg || 'API error ' + res.status);
+  }
+
+  const data = await res.json();
+  const rawText = data.candidates[0].content.parts.map(p => p.text || '').join('');
+  // If we used prefill, prepend the seed char back (the model continues from it, not repeats it)
+  return prefill && !cfg.jsonMode ? prefill + rawText : rawText;
+}
+
+
+async function analyzeFiles(apiKey, owner, repo, files, ctx, onBatchDone) {
+  const results = [];
+  const modelId = document.getElementById('modelSelect').value;
+  const cfg = MODEL_CONFIGS[modelId] || MODEL_CONFIGS['gemma-3-27b-it'];
+  const BATCH = 1;
+
+  for (let i = 0; i < files.length; i += BATCH) {
+    const batch = files.slice(i, i + BATCH);
+    const contents = await Promise.all(batch.map(f => fetchFileContent(owner, repo, f.path)));
+
+    const validFiles = batch
+      .map((f, idx) => ({ path: f.path, content: contents[idx] }))
+      .filter(f => f.content && f.content.trim().length > 20);
+
+    if (validFiles.length === 0) continue;
+
+    // Log coverage so the user can see truncation clearly
+    const f0 = validFiles[0];
+    const totalChars = f0.content.length;
+    const sentChars  = Math.min(totalChars, cfg.slice);
+    const totalLines = f0.content.split('\n').length;
+    const sentLines  = f0.content.slice(0, cfg.slice).split('\n').length;
+    const coverageTag = sentChars >= totalChars ? '[FULL]' : `[TRUNCATED — ${sentLines}/${totalLines} lines]`;
+    log(`Analyzing: ${f0.path} ${coverageTag}`, 'ok');
+
+    const isHardware = /\.(v|sv|vhd|vhdl|xdc|mif|mem|bit)$/i.test(validFiles[0].path);
+    const prompt = `OUTPUT FORMAT: Respond with ONLY a valid JSON array. Start your response with [ and end with ]. No explanation, no markdown, no code fences, no text outside the array.
+
+You are a scorched-earth senior engineer with 20 years of battle scars who has ZERO tolerance for sloppy code. You've seen production systems go down because of exactly the kind of mistakes junior devs make, and you are NOT here to be polite. Your job: find REAL bugs, logic errors, and architectural disasters — then eviscerate them.
+
+Do NOT soften your language. Do NOT find silver linings. If the code is bad, say so, name the developer's specific failure, and explain exactly why it would blow up in production. You are the last line of defence before this garbage ships.
+
+${ctx ? `CODEBASE CONTEXT:\n${ctx.description}\n` : ''}
+FILE: ${validFiles[0].path}
+${'='.repeat(60)}
+${validFiles[0].content.slice(0, cfg.slice)}
+${'='.repeat(60)}
+Note: This may be an excerpt. Do NOT flag truncation as an issue.
+
+ANALYSIS CHECKLIST — you MUST examine each of the following:
+1. LOGIC BUGS: off-by-one errors, wrong operator (< vs <=), inverted conditions, unreachable branches
+2. STATE/FLOW: invalid state transitions, missing state resets, incorrect control flow, early returns that skip cleanup
+3. EDGE CASES: null/undefined/empty input handling, zero-division, integer overflow, boundary values not handled
+4. RACE CONDITIONS / CONCURRENCY: shared mutable state, missing locks, async/await misuse, unguarded globals
+5. SECURITY: hardcoded secrets, SQL/command injection, path traversal, missing auth/authz checks, insecure deserialization
+6. RESOURCE LEAKS: file handles, DB connections, sockets, timers, event listeners never cleaned up
+7. ERROR HANDLING: bare except/catch, swallowed errors, missing error propagation, silent failures
+8. API MISUSE: wrong function args, deprecated APIs, incorrect return value handling, missing awaits
+9. DATA INTEGRITY: mutating inputs, missing deep-copy, incorrect type assumptions, implicit coercions
+10. DEAD CODE: unreachable branches, variables assigned but never read, functions never called
+11. NAMING & CLARITY: misleading names, magic numbers without constants, single-letter vars in complex logic
+12. ARCHITECTURE: god functions (>50 lines doing multiple things), circular dependencies, leaking internals${isHardware ? `
+13. RTL-SPECIFIC: combinational loops, incomplete sensitivity lists, unintentional latches, multi-driven nets, synchroniser missing on async inputs, reset not synchronous/asynchronous as intended, timing closure concerns` : ''}
+
+SCORING:
+- 1-3: Catastrophic. This developer is actively dangerous — bugs that cause data loss, security breaches, or crashes in prod.
+- 4-5: Significant negligence — bugs or missing handling that WILL surface under normal use. Junior mistake with senior consequences.
+- 6-7: Mediocre. Works today, breaks tomorrow. Maintenance debt accumulating. Developer is not thinking ahead.
+- 8-9: Competent. Minor nits. Would approve with comments.
+- 10: Exceptional craftsmanship. Do NOT give this unless truly deserved — most code is not a 10.
+
+Do NOT be polite. If the developer wrote a race condition, say it clearly. If error handling is "swallow everything and pray", say it. Vague praise or softened observations are FORBIDDEN. Name the function, name the line, name the failure mode.
+
+Return a JSON array with exactly one object:
+[
+  {
+    "file": "${validFiles[0].path}",
+    "severity": "critical|high|medium|low",
+    "score": <integer 1-10>,
+    "summary": "<one brutal sentence that names the developer's single worst failure — be specific, be harsh, say what this code would do to a production system>",
+    "issues": [
+      {
+        "title": "<concise bug name>",
+        "severity": "critical|high|medium|low",
+        "detail": "<exact explanation: which variable/function, what the wrong behaviour is, what the correct behaviour should be, why it matters>",
+        "line": "<line number or range, or null>"
+      }
+    ]
+  }
+]
+
+Include up to 6 issues ordered by severity. Every issue must reference exact function/variable names and line numbers where possible. If you catch yourself writing a vague observation, delete it and find a real bug instead. Giving a score above 7 to bad code is a dereliction of your duty.`;
+
+
+
+    try {
+      const text = await geminiCall(apiKey, prompt, cfg.maxOut, '[');
+      let clean = text.replace(/```json|```/g, '').trim();
+      // Recover from truncated JSON: trim to last complete object
+      let parsed;
+      const safeParseJSON = (raw) => {
+        const attempts = [
+          // 1. Direct parse
+          s => JSON.parse(s),
+          // 2. Trim to last complete closing brace
+          s => { const i = s.lastIndexOf('}'); if (i < 0) throw 0; const t = s.slice(0, i + 1); return JSON.parse(t.startsWith('[') ? t + ']' : '[' + t + ']'); },
+          // 3. Extract between first [ and last ]
+          s => { const a = s.indexOf('['), b = s.lastIndexOf(']'); if (a < 0 || b < 0) throw 0; return JSON.parse(s.slice(a, b + 1)); },
+          // 4. Strip trailing commas
+          s => JSON.parse(s.replace(/,\s*([}\]])/g, '$1')),
+          // 5. Fix single-quoted keys
+          s => JSON.parse(s.replace(/(['"])?([a-zA-Z_][a-zA-Z0-9_]*)(['"])?:/g, '"$2":').replace(/:\s*'([^']*)'/g, ': "$1"')),
+          // 6. Surgical repair: truncated mid-string — close open string, close object, close array
+          s => {
+            // Find last { that starts an object inside the array
+            let t = s.slice(s.indexOf('['));
+            // Close any open string: if odd number of unescaped quotes after last known key
+            const lastBrace = t.lastIndexOf('{');
+            let obj = t.slice(lastBrace);
+            // Count unescaped double quotes
+            const quoteCount = (obj.match(/(?<!\\)"/g) || []).length;
+            if (quoteCount % 2 !== 0) obj += '"'; // close the open string
+            // Ensure required fields exist with defaults
+            if (!obj.includes('"score"')) obj += ', "score": 5';
+            if (!obj.includes('"severity"')) obj += ', "severity": "medium"';
+            if (!obj.includes('"issues"')) obj += ', "issues": []';
+            obj += '}';
+            return JSON.parse('[' + obj + ']');
+          },
+        ];
+        let clean = raw.replace(/```json|```/g, '').trim();
+        for (const fn of attempts) {
+          try { return fn(clean); } catch (_) {}
+        }
+        throw new Error('Could not parse JSON from model response. Raw: ' + clean.slice(0, 200));
+      };
+      parsed = safeParseJSON(text);
+      const arr = Array.isArray(parsed) ? parsed : [parsed];
+      results.push(...arr);
+      if (onBatchDone) onBatchDone(arr);
+
+      for (const r of arr) {
+        const sev = r.severity || 'medium';
+        log(`${r.file} — ${sev.toUpperCase()} (${r.score}/10)`, sev === 'critical' ? 'err' : sev === 'high' ? 'warn' : 'ok');
+      }
+    } catch (e) {
+      if (e.message.includes('Invalid API key')) throw e;
+      if (e.message.startsWith('QUOTA_WAIT:')) {
+        const secs = parseInt(e.message.split(':')[1]);
+        log(`Quota limit hit — waiting ${secs}s before retrying...`, 'warn');
+        setProgress(Math.min(i + BATCH, files.length), files.length, `Rate limited. Cooling down ${secs}s...`);
+        await new Promise(r => setTimeout(r, secs * 1000));
+        i -= BATCH; // retry this batch
+        continue;
+      }
+      log(`Batch ${Math.floor(i/BATCH)+1} failed: ${e.message}`, 'err');
+      // Generic transient failure (Internal error / 503 not caught above) — one retry after 15s
+      if (!e.message.startsWith('Could not parse') && !e.message.startsWith('Invalid API')) {
+        log(`Retrying in 15s...`, 'warn');
+        await new Promise(r => setTimeout(r, 15000));
+        i -= BATCH; // retry once
+      }
+    }
+
+    setProgress(Math.min(i + BATCH, files.length), files.length, `Analyzing batch ${Math.floor(i/BATCH)+1} of ${Math.ceil(files.length/BATCH)}...`);
+    await new Promise(r => setTimeout(r, cfg.delay));
+  }
+
+  return results;
+}
+
+async function getOverallVerdict(apiKey, results, repoInfo, ctx) {
+  const summary = results.map(r => `${r.file} (${r.score}/10, ${r.severity}): ${r.summary}`).join('\n');
+
+  const prompt = `OUTPUT FORMAT: Respond with ONLY a valid JSON object. Start with { and end with }. No markdown.
+
+You are a brutally honest tech lead delivering a final verdict on "${repoInfo.full_name}".
+
+${ctx ? `CODEBASE CONTEXT:\n${ctx.description}\n` : ''}
+REPO INFO:
+- Description: ${repoInfo.description || 'none'}
+- Stars: ${repoInfo.stargazers_count}, Forks: ${repoInfo.forks_count}, Open Issues: ${repoInfo.open_issues_count}
+- Primary language: ${repoInfo.language || 'unknown'}
+
+FILE-BY-FILE ANALYSIS (${results.length} files):
+${summary.slice(0, 5000)}
+
+Return JSON:
+{
+  "overallScore": <1-10 integer>,
+  "codeQuality": <1-10>,
+  "securityScore": <1-10>,
+  "maintainability": <1-10>,
+  "verdict": "<3-4 sentences, savage and technically grounded — Gordon Ramsay energy>",
+  "topIssues": ["<top 3 systemic problems>"],
+  "oneGoodThing": "<one genuinely good thing, if anything exists>"
+}`;
+
+  const text = await geminiCall(apiKey, prompt, 1000);
+  return safeParseObject(text);
+}
+
+// ── ZIP BUILDER ──
+async function buildZip(owner, repo, results, verdict) {
+  const zip = new JSZip();
+  const folder = zip.folder(`${repo}-roast-report`);
+
+  // main report HTML
+  const html = buildReportHTML(owner, repo, results, verdict);
+  folder.file('report.html', html);
+
+  // JSON data
+  folder.file('raw-analysis.json', JSON.stringify({ verdict, files: results }, null, 2));
+
+  // per-file txt summaries
+  const summaryFolder = folder.folder('file-summaries');
+  for (const r of results) {
+    const fname = r.file.replace(/\//g, '__') + '.txt';
+    const content = [
+      `FILE: ${r.file}`,
+      `SCORE: ${r.score}/10`,
+      `SEVERITY: ${r.severity.toUpperCase()}`,
+      `SUMMARY: ${r.summary}`,
+      '',
+      'ISSUES:',
+      ...(r.issues || []).map((iss, i) =>
+        `  ${i+1}. [${iss.severity.toUpperCase()}] ${iss.title}\n     ${iss.detail}${iss.line ? '\n     Line: ' + iss.line : ''}`
+      )
+    ].join('\n');
+    summaryFolder.file(fname, content);
+  }
+
+  // README
+  folder.file('README.txt', [
+    `CODE ROAST REPORT`,
+    `Repository: ${owner}/${repo}`,
+    `Generated: ${new Date().toISOString()}`,
+    `Overall Score: ${verdict.overallScore}/10`,
+    '',
+    `VERDICT:`,
+    verdict.verdict,
+    '',
+    `FILES ANALYZED: ${results.length}`,
+    '',
+    `CONTENTS:`,
+    `  report.html         — Full interactive HTML report (open in browser)`,
+    `  raw-analysis.json   — Complete JSON data`,
+    `  file-summaries/     — Individual file critique text files`,
+  ].join('\n'));
+
+  return zip.generateAsync({ type: 'blob' });
+}
+
+function buildReportHTML(owner, repo, results, verdict) {
+  const rows = results.map(r => {
+    const issues = (r.issues || []).map(iss =>
+      `<tr>
+        <td style="padding:8px 12px;font-family:monospace;font-size:12px;color:#${iss.severity==='critical'?'ff6b61':iss.severity==='high'?'ff9500':'aaa'}">${iss.severity.toUpperCase()}</td>
+        <td style="padding:8px 12px;font-size:13px;font-weight:600;">${iss.title}</td>
+        <td style="padding:8px 12px;font-size:13px;color:#888;">${iss.detail}</td>
+        <td style="padding:8px 12px;font-family:monospace;font-size:11px;color:#666;">${iss.line || '—'}</td>
+      </tr>`
+    ).join('');
+
+    return `
+    <details style="margin-bottom:8px;background:#111;border:1px solid #222;border-radius:8px;overflow:hidden;">
+      <summary style="padding:14px 18px;cursor:pointer;display:flex;align-items:center;gap:12px;list-style:none;">
+        <span style="font-family:monospace;font-size:12px;color:#${r.severity==='critical'?'ff3b30':r.severity==='high'?'ff9500':'888'};background:rgba(255,255,255,0.05);padding:2px 8px;border-radius:4px;">${r.severity.toUpperCase()}</span>
+        <span style="font-family:monospace;font-size:13px;flex:1;">${r.file}</span>
+        <span style="font-family:monospace;font-size:18px;font-weight:700;color:${r.score<=3?'#ff3b30':r.score<=6?'#ff9500':'#30d158'}">${r.score}/10</span>
+      </summary>
+      <div style="padding:0 18px 16px;border-top:1px solid #222;">
+        <p style="padding:12px 0;font-size:13px;color:#bbb;font-style:italic;">${r.summary}</p>
+        ${issues ? `<table style="width:100%;border-collapse:collapse;font-family:sans-serif;">
+          <thead><tr style="border-bottom:1px solid #222;font-size:11px;color:#555;font-family:monospace;text-transform:uppercase;">
+            <th style="text-align:left;padding:6px 12px;">Severity</th>
+            <th style="text-align:left;padding:6px 12px;">Issue</th>
+            <th style="text-align:left;padding:6px 12px;">Detail</th>
+            <th style="text-align:left;padding:6px 12px;">Line</th>
+          </tr></thead>
+          <tbody>${issues}</tbody>
+        </table>` : '<p style="color:#555;font-size:12px;">No specific issues flagged.</p>'}
+      </div>
+    </details>`;
+  }).join('');
+
+  return `<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><title>Roast: ${owner}/${repo}</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a0a;color:#f0ede8;font-family:'Segoe UI',system-ui,sans-serif;padding:40px 24px;max-width:1000px;margin:0 auto}
+h1{font-size:48px;font-weight:900;letter-spacing:-0.02em;margin-bottom:4px}
+h1 span{color:#ff3b30}
+.meta{font-family:monospace;font-size:12px;color:#555;margin-bottom:32px}
+.scores{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:28px}
+.sc{background:#111;border:1px solid #222;border-radius:8px;padding:16px}
+.sc-l{font-size:10px;letter-spacing:0.15em;color:#555;text-transform:uppercase;margin-bottom:6px;font-family:monospace}
+.sc-v{font-size:36px;font-weight:700;color:#ff3b30}
+.sc-v.ok{color:#ff9500}.sc-v.gd{color:#30d158}
+.verdict{background:#111;border-left:3px solid #ff3b30;border-radius:8px;padding:18px 20px;margin-bottom:28px;font-size:14px;line-height:1.7;color:#ccc}
+.verdict strong{display:block;font-family:monospace;font-size:10px;letter-spacing:0.2em;color:#ff3b30;text-transform:uppercase;margin-bottom:8px}
+details summary::-webkit-details-marker{display:none}
+</style></head><body>
+<h1>CODE <span>ROAST</span></h1>
+<div class="meta">${owner}/${repo} · ${results.length} files analyzed · Generated ${new Date().toLocaleString()}</div>
+<div class="scores">
+  <div class="sc"><div class="sc-l">Overall Score</div><div class="sc-v ${verdict.overallScore>6?'gd':verdict.overallScore>4?'ok':''}">${verdict.overallScore}/10</div></div>
+  <div class="sc"><div class="sc-l">Code Quality</div><div class="sc-v ${verdict.codeQuality>6?'gd':verdict.codeQuality>4?'ok':''}">${verdict.codeQuality}/10</div></div>
+  <div class="sc"><div class="sc-l">Security</div><div class="sc-v ${verdict.securityScore>6?'gd':verdict.securityScore>4?'ok':''}">${verdict.securityScore}/10</div></div>
+  <div class="sc"><div class="sc-l">Maintainability</div><div class="sc-v ${verdict.maintainability>6?'gd':verdict.maintainability>4?'ok':''}">${verdict.maintainability}/10</div></div>
+</div>
+<div class="verdict"><strong>Overall Verdict</strong>${verdict.verdict}</div>
+${verdict.topIssues ? `<div style="margin-bottom:20px;background:#111;border:1px solid #222;border-radius:8px;padding:16px 18px;">
+  <div style="font-family:monospace;font-size:10px;letter-spacing:0.15em;color:#ff9500;text-transform:uppercase;margin-bottom:10px;">Top Systemic Issues</div>
+  ${verdict.topIssues.map(i => `<div style="font-size:13px;color:#bbb;padding:4px 0;border-bottom:1px solid #1a1a1a;">→ ${i}</div>`).join('')}
+</div>` : ''}
+${verdict.oneGoodThing ? `<div style="margin-bottom:24px;background:rgba(48,209,88,0.05);border:1px solid rgba(48,209,88,0.2);border-radius:8px;padding:14px 18px;font-size:13px;color:#888;">
+  <span style="color:#30d158;font-family:monospace;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;">One Redeeming Quality: </span>${verdict.oneGoodThing}
+</div>` : ''}
+<h2 style="font-size:22px;margin-bottom:16px;font-weight:700;letter-spacing:-0.01em">File-by-File Breakdown</h2>
+${rows}
+</body></html>`;
+}
+
+// ── LIVE RENDER HELPERS ──
+function appendFinding(r) {
+  const grid = document.getElementById('findingsGrid');
+  const row = document.createElement('div');
+  row.className = 'finding-row';
+  const sevClass = { critical: 'sev-critical', high: 'sev-high', medium: 'sev-medium', low: 'sev-low' }[r.severity] || 'sev-medium';
+  const issueClass = { critical: 'crit', high: 'high', medium: 'med', low: 'low' };
+  row.innerHTML = `
+    <div class="finding-header" onclick="this.parentElement.classList.toggle('open')">
+      <span class="finding-filename">${r.file}</span>
+      <span class="severity-badge ${sevClass}">${r.severity}</span>
+      <span style="font-family:var(--mono);font-size:13px;font-weight:700;color:${r.score<=3?'var(--red)':r.score<=6?'var(--amber)':'var(--green)'};flex-shrink:0;">${r.score}/10</span>
+      <span class="finding-chevron">▶</span>
+    </div>
+    <div class="finding-body">
+      <p style="font-size:13px;color:var(--text2);font-style:italic;margin-bottom:8px;padding-top:4px;">${r.summary || ''}</p>
+      <div class="issue-list">
+        ${(r.issues||[]).map(iss => `
+          <div class="issue-item ${issueClass[iss.severity]||'med'}">
+            <div class="issue-title">${iss.title}</div>
+            <div class="issue-detail">${iss.detail}</div>
+            ${iss.line ? `<span class="issue-line">line ${iss.line}</span>` : ''}
+          </div>`).join('')}
+      </div>
+    </div>`;
+  grid.appendChild(row);
+}
+
+function updateLiveScores(results) {
+  if (!results.length) return;
+  const avg = arr => Math.round(arr.reduce((s, v) => s + v, 0) / arr.length);
+  const scores = results.map(r => r.score);
+  const live = avg(scores);
+  const strip = document.getElementById('scoreStrip');
+  strip.innerHTML = [
+    { label: 'Avg Score (live)', val: live },
+    { label: 'Files Roasted', val: results.length, raw: true },
+    { label: 'Critical Files', val: results.filter(r => r.severity === 'critical').length, raw: true },
+  ].map(s => {
+    const cls = !s.raw ? (s.val > 6 ? 'good' : s.val > 4 ? 'ok' : '') : '';
+    return `<div class="score-chip">
+      <div class="score-chip-label">${s.label}</div>
+      <div class="score-chip-val ${cls}">${s.val}${s.raw ? '' : '/10'}</div>
+      <div class="score-chip-sub">${s.raw ? 'and counting...' : 'out of 10'}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── MAIN ──
+async function startRoast() {
+  const apiKey = document.getElementById('apiKey').value.trim();
+  const url = document.getElementById('repoUrl').value.trim();
+
+  setError('');
+
+  if (!apiKey) { setError('Enter your Gemini API key first.'); return; }
+  if (!apiKey.startsWith('AIza')) { setError('That doesn\'t look like a valid Gemini key (should start with AIza...).'); return; }
+
+  const match = url.match(/github\.com\/([^\/\s]+)\/([^\/\s?#]+)/);
+  if (!match) { setError('Invalid GitHub URL. Format: https://github.com/username/repo'); return; }
+
+  const [, owner, repo] = match;
+
+  document.getElementById('roastBtn').disabled = true;
+  document.getElementById('progressSection').style.display = 'block';
+  document.getElementById('progressRepo').textContent = owner + '/' + repo;
+  document.getElementById('logBox').innerHTML = '';
+
+  // Show results section immediately — findings stream in live
+  document.getElementById('resultsSection').style.display = 'block';
+  document.getElementById('repoNameDisplay').textContent = owner + '/' + repo + ' · analyzing...';
+  document.getElementById('findingsGrid').innerHTML = '';
+  document.getElementById('scoreStrip').innerHTML = '';
+  document.getElementById('verdictBox').innerHTML = '';
+
+  zipData = null;
+  allResults = [];
+
+  setProgress(0, 1, 'Connecting to GitHub...');
+
+  try {
+    log('Fetching repo tree from GitHub...', 'ok');
+    const allFiles = await getRepoTree(owner, repo);
+    log(`Total blobs: ${allFiles.length}`, 'ok');
+
+    // Build full path list for LLM to inspect
+    const allPaths = buildFileTree(allFiles);
+    log(`Candidate files (non-generated): ${allPaths.length}`, 'ok');
+
+    if (allPaths.length === 0) throw new Error('No code files found. Is this a code repo?');
+
+    // Step 1: LLM analyses directory map, picks files + gives codebase description
+    log('Asking model to map the codebase...', 'ok');
+    setProgress(0, 1, 'Mapping codebase architecture...');
+    let ctx = null;
+    try {
+      ctx = await getCodebaseContext(apiKey, owner, repo, allPaths, repoMeta);
+      log(`Codebase: ${ctx.description.slice(0, 120)}...`, 'ok');
+      log(`LLM selected ${ctx.filesToAnalyze.length} files for analysis`, 'ok');
+    } catch (e) {
+      log('Could not get codebase map — falling back to heuristic selection', 'warn');
+    }
+
+    // Step 2: resolve file objects — prefer LLM selection, fallback to ALL candidate files
+    let codeFiles;
+    // Build a flat map of path → blob for quick lookup
+    const pathMap = new Map(allFiles.map(f => [f.path, f]));
+
+    if (ctx && ctx.filesToAnalyze.length > 0) {
+      codeFiles = ctx.filesToAnalyze
+        .map(p => pathMap.get(p))
+        .filter(Boolean);
+      if (codeFiles.length === 0) {
+        log('LLM file list didn\'t match any tree paths — check raw context log above', 'warn');
+      }
+    }
+
+    // Fallback: CODE_EXTS filtered, no file cap
+    if (!codeFiles || codeFiles.length === 0) {
+      log('Using heuristic fallback: code files sorted by depth (no cap)', 'warn');
+      codeFiles = allFiles
+        .filter(f => CODE_EXTS.test(f.path) && !SKIP_DIRS.test(f.path))
+        .sort((a, b) => {
+          const da = a.path.split('/').length, db = b.path.split('/').length;
+          return da !== db ? da - db : a.path.localeCompare(b.path);
+        });
+    }
+    log(`Code files selected for analysis: ${codeFiles.length}`, 'ok');
+
+    setProgress(0, codeFiles.length, 'Starting analysis...');
+
+    // Step 3: per-file analysis with codebase context injected
+    allResults = await analyzeFiles(apiKey, owner, repo, codeFiles, ctx, (batchResults) => {
+      for (const r of batchResults) appendFinding(r);
+      updateLiveScores(allResults);
+    });
+
+    log('Building overall verdict...', 'ok');
+    setProgress(codeFiles.length, codeFiles.length, 'Generating final verdict...');
+
+    const verdict = await getOverallVerdict(apiKey, allResults, repoMeta, ctx);
+
+    log('Building ZIP report...', 'ok');
+    zipData = await buildZip(owner, repo, allResults, verdict);
+    log(`ZIP ready — ${allResults.length} files analyzed!`, 'ok');
+
+    // Finalize: hide progress, update header + scores with real verdict
+    document.getElementById('progressSection').style.display = 'none';
+    document.getElementById('repoNameDisplay').textContent = owner + '/' + repo + ' · ' + allResults.length + ' files analyzed';
+    const strip = document.getElementById('scoreStrip');
+    const scores = [
+      { label: 'Overall', val: verdict.overallScore },
+      { label: 'Code Quality', val: verdict.codeQuality },
+      { label: 'Security', val: verdict.securityScore },
+      { label: 'Maintainability', val: verdict.maintainability },
+    ];
+    strip.innerHTML = scores.map(s => {
+      const cls = s.val > 6 ? 'good' : s.val > 4 ? 'ok' : '';
+      return `<div class="score-chip">
+        <div class="score-chip-label">${s.label}</div>
+        <div class="score-chip-val ${cls}">${s.val}</div>
+        <div class="score-chip-sub">out of 10</div>
+      </div>`;
+    }).join('');
+    const vbox = document.getElementById('verdictBox');
+    vbox.innerHTML = `<strong>Overall Verdict</strong>${verdict.verdict}` +
+      (verdict.topIssues ? `<ul style="margin-top:10px;padding-left:18px;font-size:13px;color:var(--text2);">${verdict.topIssues.map(i=>`<li>${i}</li>`).join('')}</ul>` : '') +
+      (verdict.oneGoodThing ? `<div style="margin-top:10px;font-size:13px;color:var(--green);">✓ ${verdict.oneGoodThing}</div>` : '');
+
+  } catch (e) {
+    setError(e.message || 'Something went wrong.');
+    log('Error: ' + e.message, 'err');
+    document.getElementById('roastBtn').disabled = false;
+    document.getElementById('progressSection').style.display = 'none';
+  }
+}
+
+function renderResults(owner, repo, results, verdict) {
+  document.getElementById('progressSection').style.display = 'none';
+  document.getElementById('resultsSection').style.display = 'block';
+  document.getElementById('repoNameDisplay').textContent = owner + '/' + repo + ' · ' + results.length + ' files analyzed';
+
+  // scores
+  const strip = document.getElementById('scoreStrip');
+  const scores = [
+    { label: 'Overall', val: verdict.overallScore },
+    { label: 'Code Quality', val: verdict.codeQuality },
+    { label: 'Security', val: verdict.securityScore },
+    { label: 'Maintainability', val: verdict.maintainability },
+  ];
+  strip.innerHTML = scores.map(s => {
+    const cls = s.val > 6 ? 'good' : s.val > 4 ? 'ok' : '';
+    return `<div class="score-chip">
+      <div class="score-chip-label">${s.label}</div>
+      <div class="score-chip-val ${cls}">${s.val}</div>
+      <div class="score-chip-sub">out of 10</div>
+    </div>`;
+  }).join('');
+
+  // verdict
+  const vbox = document.getElementById('verdictBox');
+  vbox.innerHTML = `<strong>Overall Verdict</strong>${verdict.verdict}` +
+    (verdict.topIssues ? `<ul style="margin-top:10px;padding-left:18px;font-size:13px;color:var(--text2);">${verdict.topIssues.map(i=>`<li>${i}</li>`).join('')}</ul>` : '') +
+    (verdict.oneGoodThing ? `<div style="margin-top:10px;font-size:13px;color:var(--green);">✓ ${verdict.oneGoodThing}</div>` : '');
+
+  // file findings
+  const grid = document.getElementById('findingsGrid');
+  grid.innerHTML = '';
+
+  const sorted = [...results].sort((a, b) => {
+    const order = { critical: 0, high: 1, medium: 2, low: 3 };
+    return (order[a.severity] || 2) - (order[b.severity] || 2);
+  });
+
+  for (const r of sorted) {
+    const row = document.createElement('div');
+    row.className = 'finding-row';
+
+    const sevClass = { critical: 'sev-critical', high: 'sev-high', medium: 'sev-medium', low: 'sev-low' }[r.severity] || 'sev-medium';
+    const issueClass = { critical: 'crit', high: 'high', medium: 'med', low: 'low' };
+
+    row.innerHTML = `
+      <div class="finding-header" onclick="this.parentElement.classList.toggle('open')">
+        <span class="finding-filename">${r.file}</span>
+        <span class="severity-badge ${sevClass}">${r.severity}</span>
+        <span style="font-family:var(--mono);font-size:13px;font-weight:700;color:${r.score<=3?'var(--red)':r.score<=6?'var(--amber)':'var(--green)'};flex-shrink:0;">${r.score}/10</span>
+        <span class="finding-chevron">▶</span>
+      </div>
+      <div class="finding-body">
+        <p style="font-size:13px;color:var(--text2);font-style:italic;margin-bottom:8px;padding-top:4px;">${r.summary || ''}</p>
+        <div class="issue-list">
+          ${(r.issues||[]).map(iss => `
+            <div class="issue-item ${issueClass[iss.severity]||'med'}">
+              <div class="issue-title">${iss.title}</div>
+              <div class="issue-detail">${iss.detail}</div>
+              ${iss.line ? `<span class="issue-line">line ${iss.line}</span>` : ''}
+            </div>`).join('')}
+        </div>
+      </div>`;
+    grid.appendChild(row);
+  }
+}
+
+function downloadZip() {
+  if (!zipData) return;
+  const url = URL.createObjectURL(zipData);
+  const repoName = document.getElementById('repoUrl').value.match(/github\.com\/[^\/]+\/([^\/\s?#]+)/)?.[1] || 'repo';
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = repoName + '-roast-report.zip';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 3000);
+}
+
+function resetAll() {
+  document.getElementById('resultsSection').style.display = 'none';
+  document.getElementById('repoUrl').value = '';
+  document.getElementById('roastBtn').disabled = false;
+  zipData = null;
+  allResults = [];
+}
+
+document.getElementById('repoUrl').addEventListener('keydown', e => { if (e.key === 'Enter') startRoast(); });
+</script>
+</body>
+</html>
