@@ -20,7 +20,7 @@ A single-file, zero-dependency tool that performs a ruthless, AI-powered code re
 ## Features
 
 - 🧠 **LLM-driven file selection** — Not random sampling. The model reads the directory tree, understands the architecture, and selects the files that actually matter.
-- 🔍 **Deep bug analysis** — 12-point mandatory checklist: logic bugs, state machine errors, edge cases, race conditions, security, resource leaks, error handling, API misuse, data integrity, dead code, naming, architecture. RTL-specific checks for `.v`/`.sv`/`.vhd` hardware files.
+- 🔍 **Deep bug analysis** — 12-point mandatory checklist: logic bugs, state machine errors, edge cases, race conditions, security, resource leaks, error handling, API misuse, data integrity, dead code, naming, architecture.
 - ⚡ **Rate-limit aware** — Dynamic delays per model, TPM/RPM/RPD budgets respected. No silent quota hammering.
 - 🛡️ **Robust JSON recovery** — 6-stage fallback parser handles truncated/malformed model responses including surgical mid-string repair.
 - 🔒 **Zero backend** — Your API key and repo contents never touch any server other than Google's. Everything runs in a single HTML file.
